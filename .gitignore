@@ -1,0 +1,13 @@
+node_modules/
+
+# Personal data — never commit these
+data/arbiter-profile/
+data/gcal-credentials.json
+data/gcal-token.json
+data/arbiter-games.json
+data/gcal-event-map.json
+data/email-sent-log.json
+data/config.json
+data/sync.log
+data/*.html
+data/*.png

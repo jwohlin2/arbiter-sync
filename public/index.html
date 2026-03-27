@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arbiter Sync</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    .container { max-width: 680px; margin: 0 auto; }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #1a1a2e;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 99px;
+    }
+    .badge-ok { background: #d1fae5; color: #065f46; }
+    .badge-warn { background: #fef3c7; color: #92400e; }
+    .badge-error { background: #fee2e2; color: #991b1b; }
+
+    .card-body { font-size: 0.875rem; color: #6b7280; margin-bottom: 14px; }
+
+    button {
+      display: inline-block;
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    button:not(:disabled):hover { opacity: .88; }
+
+    .btn-primary { background: #4f46e5; color: #fff; }
+    .btn-success { background: #059669; color: #fff; }
+    .btn-danger  { background: #dc2626; color: #fff; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+
+    .log {
+      background: #1a1a2e;
+      color: #a5f3fc;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.8rem;
+      border-radius: 8px;
+      padding: 14px 16px;
+      min-height: 80px;
+      max-height: 220px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .log-placeholder { color: #4b5563; font-style: italic; }
+
+    .inline-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .notice {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+
+    #error-banner {
+      display: none;
+      background: #fee2e2;
+      color: #991b1b;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 0.875rem;
+    }
+
+    .game-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 0.85rem;
+    }
+    .game-row:last-child { border-bottom: none; }
+    .game-info { flex: 1; min-width: 0; }
+    .game-title { font-weight: 600; color: #1a1a2e; margin-bottom: 2px; }
+    .game-meta  { color: #6b7280; font-size: 0.8rem; }
+    .game-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+
+    /* Email compose modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.4);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 620px;
+      max-height: 90vh;
+      overflow-y: auto;
+      margin: 16px;
+    }
+    .modal h2 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 4px; }
+    .field input, .field textarea {
+      width: 100%; padding: 8px 10px;
+      border: 1px solid #d1d5db; border-radius: 6px;
+      font-size: 0.85rem; font-family: inherit;
+    }
+    .field textarea { min-height: 200px; resize: vertical; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+    .no-host-note { font-size: 0.8rem; color: #92400e; background: #fef3c7; padding: 8px 10px; border-radius: 6px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Arbiter Sync</h1>
+
+  <div id="error-banner"></div>
+
+  <!-- Arbiter Card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Arbiter</span>
+      <span class="badge" id="arbiter-badge">...</span>
+    </div>
+    <div class="card-body" id="arbiter-body">Checking...</div>
+    <div class="inline-btns">
+      <button class="btn-primary" id="btn-arbiter-login" onclick="startArbiterLogin()" disabled>Connect Arbiter</button>
+      <button class="btn-success" id="btn-arbiter-done" onclick="doneArbiterLogin()" style="display:none">I'm logged in — Save Session</button>
+    </div>
+    <p class="notice" id="arbiter-notice" style="display:none">
+      Log into Arbiter in the browser window that just opened. Once you can see your schedule, click "I'm logged in".
+    </p>
+  </div>
+
+  <!-- Google Calendar Card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Google Calendar</span>
+      <span class="badge" id="gcal-badge">...</span>
+    </div>
+    <div class="card-body" id="gcal-body">Checking...</div>
+    <button class="btn-primary" id="btn-gcal-auth" onclick="authorizeGcal()" disabled>Connect Google Calendar</button>
+  </div>
+
+  <!-- Settings Card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Your Info</span>
+      <span class="badge badge-ok" id="settings-badge" style="display:none">Saved</span>
+    </div>
+    <div class="card-body">Used in the email signature.</div>
+    <div style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap">
+      <input type="text" id="signer-name" placeholder="John Wohlin"
+        style="flex:1; min-width:160px; padding:7px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:.875rem">
+      <input type="text" id="signer-phone" placeholder="724-510-6001"
+        style="flex:1; min-width:140px; padding:7px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:.875rem">
+    </div>
+    <label style="display:flex; align-items:center; gap:8px; margin-bottom:12px; font-size:.875rem; cursor:pointer">
+      <input type="checkbox" id="auto-email" style="width:16px; height:16px; cursor:pointer">
+      Automatically send confirmation emails the day before each Referee game
+    </label>
+    <button class="btn-secondary" onclick="saveSettings()">Save</button>
+  </div>
+
+  <!-- Google Calendar Card -->
+  <div class="card" id="gcal-card" style="display:none">
+    <div class="card-header">
+      <span class="card-title">Gmail Access Needed</span>
+      <span class="badge badge-warn">Action required</span>
+    </div>
+    <div class="card-body">Email sending requires Gmail access. Click Re-authorize to grant it — you'll be asked to approve both Calendar and Gmail together.</div>
+    <button class="btn-primary" onclick="authorizeGcal()">Re-authorize Google</button>
+  </div>
+
+  <!-- Sync Card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Sync</span>
+      <span class="badge badge-ok" id="sync-badge" style="display:none"></span>
+    </div>
+    <div class="card-body" id="sync-body">Pull your games from Arbiter and add them to Google Calendar.</div>
+    <button class="btn-success" id="btn-sync" onclick="runSync()" disabled>Sync Now</button>
+    <div id="log-wrap" style="margin-top:14px; display:none">
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  <!-- Games List Card -->
+  <div class="card" id="games-card" style="display:none">
+    <div class="card-header">
+      <span class="card-title">Upcoming Games</span>
+      <span class="badge badge-ok" id="games-badge" style="display:none"></span>
+    </div>
+    <div id="games-list"></div>
+  </div>
+</div>
+
+<!-- Email Compose Modal -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <h2>Send Game Confirmation</h2>
+    <div class="field">
+      <label>To (host school contacts)</label>
+      <input type="text" id="email-to" placeholder="email@school.edu">
+    </div>
+    <div class="field">
+      <label>CC (crew)</label>
+      <input type="text" id="email-cc">
+    </div>
+    <div class="field">
+      <label>Subject</label>
+      <input type="text" id="email-subject">
+    </div>
+    <div class="field">
+      <label>Body</label>
+      <textarea id="email-body"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn-success btn-sm" id="btn-send-email" onclick="submitEmail()">Send Email</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let pollTimer = null;
+  let currentGameId = null;
+
+  function showError(msg) {
+    const el = document.getElementById('error-banner');
+    el.textContent = msg;
+    el.style.display = msg ? 'block' : 'none';
+  }
+
+  function setBadge(id, text, type) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = 'badge badge-' + type;
+  }
+
+  function applyStatus(s) {
+    // Arbiter
+    if (s.arbiterBrowserOpen) {
+      setBadge('arbiter-badge', 'Browser open', 'warn');
+      document.getElementById('arbiter-body').textContent = 'Log in and click the button below when your schedule is visible.';
+      document.getElementById('btn-arbiter-login').style.display = 'none';
+      document.getElementById('btn-arbiter-done').style.display = '';
+      document.getElementById('arbiter-notice').style.display = '';
+    } else if (s.arbiterReady) {
+      setBadge('arbiter-badge', 'Connected', 'ok');
+      document.getElementById('arbiter-body').textContent = 'Session saved. You can re-connect if it expires.';
+      document.getElementById('btn-arbiter-login').style.display = '';
+      document.getElementById('btn-arbiter-login').textContent = 'Re-connect Arbiter';
+      document.getElementById('btn-arbiter-done').style.display = 'none';
+      document.getElementById('arbiter-notice').style.display = 'none';
+      document.getElementById('btn-arbiter-login').disabled = false;
+    } else {
+      setBadge('arbiter-badge', 'Not connected', 'warn');
+      document.getElementById('arbiter-body').textContent = 'Click below to open a browser window and log into Arbiter.';
+      document.getElementById('btn-arbiter-login').disabled = false;
+      document.getElementById('btn-arbiter-login').style.display = '';
+      document.getElementById('btn-arbiter-done').style.display = 'none';
+      document.getElementById('arbiter-notice').style.display = 'none';
+    }
+
+    // Google Calendar
+    if (s.gcalCredsMissing) {
+      setBadge('gcal-badge', 'Setup needed', 'error');
+      document.getElementById('gcal-body').textContent = 'Missing gcal-credentials.json in the data folder. See setup instructions.';
+      document.getElementById('btn-gcal-auth').disabled = true;
+    } else if (s.gcalReady) {
+      setBadge('gcal-badge', 'Connected', 'ok');
+      document.getElementById('gcal-body').textContent = 'Google Calendar authorized. You can re-authorize if needed.';
+      document.getElementById('btn-gcal-auth').textContent = 'Re-authorize';
+      document.getElementById('btn-gcal-auth').disabled = false;
+    } else {
+      setBadge('gcal-badge', 'Not connected', 'warn');
+      document.getElementById('gcal-body').textContent = 'Click below to authorize access to your Google Calendar.';
+      document.getElementById('btn-gcal-auth').disabled = false;
+    }
+
+    // Gmail re-auth prompt
+    document.getElementById('gcal-card').style.display =
+      (s.gcalReady && !s.gmailReady) ? 'block' : 'none';
+
+    // Sync button
+    const canSync = s.arbiterReady && s.gcalReady && !s.syncInProgress && !s.arbiterBrowserOpen;
+    document.getElementById('btn-sync').disabled = !canSync;
+    document.getElementById('btn-sync').textContent = s.syncInProgress ? 'Syncing...' : 'Sync Now';
+
+    // Last sync info
+    if (s.lastSync) {
+      const d = new Date(s.lastSync);
+      const badge = document.getElementById('sync-badge');
+      badge.style.display = '';
+      badge.textContent = `Last synced: ${d.toLocaleDateString()} ${d.toLocaleTimeString()} · ${s.gameCount} games`;
+    }
+
+    // Log
+    if (s.lastSyncLog && s.lastSyncLog.length > 0) {
+      document.getElementById('log-wrap').style.display = '';
+      document.getElementById('log').textContent = s.lastSyncLog.join('\n');
+    }
+
+    // Load games list if synced
+    if (s.lastSync) loadGames();
+  }
+
+  async function fetchStatus() {
+    try {
+      const res = await fetch('/api/status');
+      const s = await res.json();
+      applyStatus(s);
+      return s;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // ---- Games List ----
+  async function loadGames() {
+    const res  = await fetch('/api/games');
+    const data = await res.json();
+    const card = document.getElementById('games-card');
+    const list = document.getElementById('games-list');
+
+    if (!data.games.length) { card.style.display = 'none'; return; }
+
+    card.style.display = 'block';
+    const badge = document.getElementById('games-badge');
+    badge.style.display = '';
+    badge.textContent = `${data.games.length} upcoming`;
+
+    list.innerHTML = data.games.map(g => {
+      const d    = new Date(g.start);
+      const date = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' });
+      const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/New_York' });
+      const sent = g.emailStatus?.sentAt;
+      const skipped = g.emailStatus?.skipped;
+      const statusBadge = sent
+        ? `<span class="badge badge-ok" style="font-size:.7rem">Email sent</span>`
+        : skipped
+          ? `<span class="badge badge-warn" style="font-size:.7rem">No host contacts</span>`
+          : '';
+      const encodedId = encodeURIComponent(g.id);
+      return `
+        <div class="game-row">
+          <div class="game-info">
+            <div class="game-title">${g.title}</div>
+            <div class="game-meta">${date} · ${time} · ${g.location || '—'}</div>
+            ${statusBadge ? `<div style="margin-top:4px">${statusBadge}</div>` : ''}
+          </div>
+          <div class="game-actions">
+            <button class="btn-primary btn-sm" onclick="openEmailCompose('${encodedId}', this)" ${sent ? 'title="Already sent — click to resend"' : ''}>
+              ${sent ? 'Resend' : 'Send Confirmation'}
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ---- Email Compose ----
+  async function openEmailCompose(encodedId, btn) {
+    currentGameId = decodeURIComponent(encodedId);
+    btn.disabled = true;
+    btn.textContent = 'Loading...';
+
+    try {
+      const res  = await fetch(`/api/game/${encodedId}/detail`);
+      const data = await res.json();
+
+      if (!data.ok) { showError(data.error); return; }
+
+      // Pre-fill the form — server builds the email body via /api/game/:id/preview
+      // For now open the modal with what we have; body built client-side would need game data.
+      // Fetch the preview from server instead:
+      const previewRes  = await fetch(`/api/game/${encodedId}/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const preview = await previewRes.json();
+
+      document.getElementById('email-to').value      = preview.to || data.hostEmails.join(', ');
+      document.getElementById('email-cc').value      = preview.cc || data.crewEmails.filter(e => e !== 'jwohlin2@gmail.com').join(', ');
+      document.getElementById('email-subject').value = preview.subject || '';
+      document.getElementById('email-body').value    = preview.body || '';
+
+      if (!data.hostEmails.length) {
+        document.getElementById('email-to').placeholder = 'No contacts found — enter manually';
+      }
+
+      document.getElementById('modal-backdrop').classList.add('open');
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = btn.textContent === 'Loading...' ? 'Send Confirmation' : btn.textContent;
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('modal-backdrop').classList.remove('open');
+    currentGameId = null;
+  }
+
+  async function submitEmail() {
+    const btn = document.getElementById('btn-send-email');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    const payload = {
+      to:      document.getElementById('email-to').value.trim(),
+      cc:      document.getElementById('email-cc').value.trim(),
+      subject: document.getElementById('email-subject').value.trim(),
+      body:    document.getElementById('email-body').value
+    };
+
+    try {
+      const res  = await fetch(`/api/game/${encodeURIComponent(currentGameId)}/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        closeModal();
+        await loadGames();
+      } else {
+        showError(data.error);
+      }
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Send Email';
+    }
+  }
+
+  // Close modal on backdrop click
+  document.getElementById('modal-backdrop').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-backdrop')) closeModal();
+  });
+
+  // ---- Arbiter / GCal / Sync ----
+  async function startArbiterLogin() {
+    document.getElementById('btn-arbiter-login').disabled = true;
+    try {
+      const res = await fetch('/api/arbiter-start', { method: 'POST' });
+      const data = await res.json();
+      if (!data.ok) { showError(data.error); return; }
+      await fetchStatus();
+      startPolling();
+    } catch (e) {
+      showError(e.message);
+      document.getElementById('btn-arbiter-login').disabled = false;
+    }
+  }
+
+  async function doneArbiterLogin() {
+    document.getElementById('btn-arbiter-done').disabled = true;
+    try {
+      await fetch('/api/arbiter-done', { method: 'POST' });
+      stopPolling();
+      await fetchStatus();
+    } catch (e) {
+      showError(e.message);
+      document.getElementById('btn-arbiter-done').disabled = false;
+    }
+  }
+
+  function authorizeGcal() {
+    window.location.href = '/api/gcal-auth';
+  }
+
+  async function runSync() {
+    document.getElementById('btn-sync').disabled = true;
+    document.getElementById('btn-sync').textContent = 'Syncing...';
+    document.getElementById('log-wrap').style.display = '';
+    document.getElementById('log').textContent = 'Starting sync...';
+    showError('');
+    startPolling();
+    try {
+      const res  = await fetch('/api/sync', { method: 'POST' });
+      const data = await res.json();
+      if (!data.ok) showError(data.error);
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      stopPolling();
+      await fetchStatus();
+    }
+  }
+
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(fetchStatus, 1500);
+  }
+
+  function stopPolling() {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
+  async function loadSettings() {
+    const res  = await fetch('/api/config');
+    const data = await res.json();
+    document.getElementById('signer-name').value    = data.signerName  || '';
+    document.getElementById('signer-phone').value   = data.signerPhone || '';
+    document.getElementById('auto-email').checked   = !!data.autoEmail;
+  }
+
+  async function saveSettings() {
+    const payload = {
+      signerName:  document.getElementById('signer-name').value.trim(),
+      signerPhone: document.getElementById('signer-phone').value.trim(),
+      autoEmail:   document.getElementById('auto-email').checked
+    };
+    const res = await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if ((await res.json()).ok) {
+      const badge = document.getElementById('settings-badge');
+      badge.style.display = '';
+      setTimeout(() => badge.style.display = 'none', 2000);
+    }
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('gcal') === 'authorized') history.replaceState({}, '', '/');
+  if (params.get('error')) {
+    showError(decodeURIComponent(params.get('error')));
+    history.replaceState({}, '', '/');
+  }
+
+  fetchStatus();
+  loadSettings();
+</script>
+</body>
+</html>
