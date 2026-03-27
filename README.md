@@ -39,7 +39,7 @@ Contact the repository owner for the `gcal-credentials.json` file. Place it in t
 
 ### 4. Log into Arbiter
 
-Double-click `start.bat` to open the app, then click **Connect Arbiter**. A browser window will open — log in with your Google account and complete MFA. Once you can see your schedule, click **I'm logged in**.
+Double-click `start.bat` to open the app, then click **Connect Arbiter**. A browser window will open — log in with your email and userername _**NOT YOUR GOOGLE ACCOUNT**_ account and complete MFA. Once you can see your schedule, click **I'm logged in**.
 
 ### 5. Connect Google Calendar
 
