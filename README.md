@@ -2,6 +2,8 @@
 
 Pulls your game assignments from Arbiter Sports, adds them to Google Calendar, and sends day-before confirmation emails to host schools.
 
+[Privacy Policy](https://jwohlin2.github.io/arbiter-sync/privacy-policy) · [Terms of Service](https://jwohlin2.github.io/arbiter-sync/terms-of-service)
+
 ## What it does
 
 - Syncs your Arbiter schedule to Google Calendar automatically
