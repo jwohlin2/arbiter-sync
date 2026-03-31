@@ -4,65 +4,78 @@ Pulls your game assignments from Arbiter Sports, adds them to Google Calendar, a
 
 ## What it does
 
-- Pulls your Arbiter schedule and syncs it to Google Calendar
+- Syncs your Arbiter schedule to Google Calendar automatically
 - Shows upcoming Referee games in a simple web UI
 - Sends confirmation emails to host school contacts the day before each game
-- Runs automatically every day at 9 AM via Windows Task Scheduler
+- Can run automatically every morning via Windows Task Scheduler
 
 ## Prerequisites
 
-- Windows PC
-- [Node.js](https://nodejs.org) (download the LTS version)
+- [Node.js](https://nodejs.org) — download and install the **LTS** version
 - A Google account with Google Calendar
 
-## Setup
+## First-time setup
 
 ### 1. Download the project
 
-Click the green **Code** button on this page → **Download ZIP** → extract it somewhere on your PC (e.g. `C:\arbiter-sync`).
+Click the green **Code** button → **Download ZIP** → extract it anywhere on your computer.
 
-### 2. Install dependencies
+### 2. Get the Google credentials file
 
-Open PowerShell, navigate to the folder, and run:
+Contact the repository owner for the `gcal-credentials.json` file and place it inside the `data/` folder.
 
-```
-cd C:\arbiter-sync
-npm install
-npx playwright install chromium
-```
+> You also need to be added as an authorized user — send the repo owner your Gmail address so they can add you.
 
-### 3. Get the Google credentials file
+### 3. Run the setup script
 
-Contact the repository owner for the `gcal-credentials.json` file. Place it in the `data/` folder inside the project.
+**Windows:** Double-click `windows-setup.bat`. If it says Node.js is not found, install it from [nodejs.org](https://nodejs.org) first and try again.
 
-> You also need to be added as an authorized user — send the repo owner your Gmail address.
+**Mac:** Right-click `mac-setup.command` → **Open** → approve it in System Settings → Privacy & Security if prompted. After that, double-click works normally.
 
-### 4. Log into Arbiter
+Both scripts install all dependencies and download the Chromium browser used to access Arbiter.
 
-Double-click `start.bat` to open the app, then click **Connect Arbiter**. A browser window will open — log in with your email and userername _**NOT YOUR GOOGLE ACCOUNT**_ account and complete MFA. Once you can see your schedule, click **I'm logged in**.
+### 4. Launch the app
 
-### 5. Connect Google Calendar
+**Windows:** Double-click `ArbiterSync.vbs`
 
-Click **Connect Google Calendar** in the app and sign in with your Google account.
+**Mac:** Double-click `ArbiterSync.command`
 
-### 6. Set your info
+The app opens in your browser at `http://localhost:3000`.
 
-Fill in your name and phone number in the **Your Info** section and click **Save**. This is used in the email signature.
+### 5. Connect Arbiter
 
-### 7. Sync
+Click **Connect Arbiter**. A browser window opens — log in with your **Arbiter username and password** (***not*** your Google account) and complete MFA. Once you can see your game schedule, click **I'm logged in — Save Session**.
 
-Click **Sync Now** to pull your games and add them to Google Calendar.
+### 6. Connect Google Calendar
 
-### 8. Schedule automatic daily sync (optional)
+Click **Connect Google Calendar** and sign in. You may see an "unverified app" warning — click **Advanced** → **Go to Arbiter Sync** to proceed.
 
-Run `schedule-task.bat` from a CMD window (right-click → Run as administrator) to set up a daily 9 AM sync and email send.
+### 7. Set your info
+
+Fill in your name and phone number under **Your Info** and click **Save**. This appears in the email signature.
+
+### 8. Sync
+
+Click **Sync Now** to pull your games into Google Calendar.
 
 ## Daily use
 
-- Double-click `start.bat` to open the app
-- Click **Sync Now** to refresh your games
-- Click **Send Confirmation** on any upcoming Referee game to send a day-before email to the host school
+1. Double-click `ArbiterSync.vbs` (Windows) or `ArbiterSync.command` (Mac)
+2. Click **Sync Now** to refresh your schedule
+3. Click **Send Confirmation** on any Referee game to email the host school
 
-## Re-connecting
+## Automatic daily sync — Windows only
 
-Google sessions last a long time. Arbiter sessions may expire occasionally — just click **Re-connect Arbiter** in the app if sync stops working.
+Run `schedule-task.bat` from a CMD window (right-click → Run as administrator) to schedule a daily 9 AM sync and automatic email send.
+
+To also send confirmation emails automatically, check the **Automatically send confirmation emails** box in the Your Info section and click Save before setting up the schedule.
+
+## Troubleshooting
+
+**Arbiter session expired** — Click **Re-connect Arbiter** and log in again.
+
+**Google Calendar stopped syncing** — Click **Re-authorize** next to Google Calendar.
+
+**App won't open on Mac** — Right-click the `.command` file → Open. macOS blocks unrecognized scripts on first launch.
+
+**Node.js not found on Windows** — Install from [nodejs.org](https://nodejs.org), then open a new PowerShell window and try again.
